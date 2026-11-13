@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ARJ E-Sports | Free & Paid Tournaments</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Rajdhani', sans-serif; background: #07090e; color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+    .font-esports { font-family: 'Orbitron', sans-serif; }
+    .glass { background: rgba(18, 23, 36, 0.94); border: 1px solid rgba(255, 106, 0, 0.25); }
+    .neon-btn { background: linear-gradient(135deg, #ff5100, #ff9500); box-shadow: 0 4px 18px rgba(255, 81, 0, 0.35); }
+    .free-btn { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 18px rgba(16, 185, 129, 0.3); }
+    .neon-btn:active, .free-btn:active { transform: scale(0.98); }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center bg-black">
+
+  <!-- App Container -->
+  <div class="w-full max-w-md min-h-screen bg-[#0b0e16] flex flex-col border-x border-gray-800/60">
+
+    <!-- Header -->
+    <header class="glass px-4 py-3 flex items-center justify-between border-b border-orange-500/20 sticky top-0 z-20">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-esports font-extrabold text-white text-base shadow-lg shadow-orange-500/30">
+          ARJ
+        </div>
+        <div>
+          <h1 id="uiBrandName" class="font-esports text-sm font-bold text-white tracking-wider">ARJ E-SPORTS</h1>
+          <p class="text-[11px] text-orange-400 font-bold uppercase tracking-widest">Free Fire Tournament</p>
+        </div>
+      </div>
+
+      <!-- Customize Button -->
+      <button onclick="openCustomizeModal()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-orange-500/40 text-orange-400 text-xs font-bold flex items-center gap-1.5">
+        <span>??</span> Customize
+      </button>
+    </header>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-lg bg-orange-500 text-white font-bold text-xs shadow-xl"></div>
+
+    <!-- Main Page Content -->
+    <main class="flex-1 p-4 space-y-4">
+
+      <!-- Hero Banner -->
+      <div class="rounded-2xl p-4 bg-gradient-to-r from-orange-600/25 via-red-600/15 to-gray-900 border border-orange-500/30">
+        <span class="text-[10px] font-bold uppercase tracking-widest bg-orange-500 text-black px-2 py-0.5 rounded">Daily Custom Rooms</span>
+        <h2 class="font-esports text-lg font-bold text-white mt-1.5">FREE & PAID MATCHES</h2>
+        <p class="text-xs text-gray-300 mt-0.5">Join karein, Confirmation Code paayein & WhatsApp Channel par Room ID lein.</p>
+      </div>
+
+      <!-- Filter Tabs (All / Free / Paid) -->
+      <div class="flex gap-2">
+        <button onclick="setFilter('all')" class="filter-pill px-4 py-1.5 rounded-full text-xs font-bold bg-orange-500 text-black" data-f="all">All Matches</button>
+        <button onclick="setFilter('free')" class="filter-pill px-4 py-1.5 rounded-full text-xs font-bold bg-gray-800 text-gray-300" data-f="free">?? Free</button>
+        <button onclick="setFilter('paid')" class="filter-pill px-4 py-1.5 rounded-full text-xs font-bold bg-gray-800 text-gray-300" data-f="paid">?? Paid</button>
+      </div>
+
+      <!-- Matches List -->
+      <div id="matchesList" class="space-y-3.5"></div>
+
+      <!-- Recent Active Ticket -->
+      <div id="myTicketPreview" class="hidden glass rounded-2xl p-4 space-y-2 border border-green-500/30">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-green-400 uppercase">? Your Last Pass</span>
+          <span id="previewCode" class="font-esports text-sm font-bold text-yellow-400"></span>
+        </div>
+        <p class="text-xs text-gray-300">Match: <strong id="previewMatch" class="text-white"></strong></p>
+        <p class="text-xs text-gray-300">UID: <strong id="previewUid" class="text-white"></strong> | Status: <strong id="previewUtr" class="text-green-400 font-mono"></strong></p>
+        <a id="previewChannelBtn" target="_blank" href="#" class="block w-full text-center py-2 rounded-lg bg-green-600 text-white font-bold text-xs">
+          Open WhatsApp Channel
+        </a>
+      </div>
+
+    </main>
+
+    <!-- ================= JOIN / PAYMENT MODAL ================= -->
+    <div id="joinModal" class="fixed inset-0 z-40 hidden bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 overflow-y-auto">
+      <div class="w-full max-w-md glass rounded-2xl p-5 space-y-4 my-auto border border-orange-500/30">
+
+        <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+          <div>
+            <h3 class="font-esports text-sm font-bold text-white">TOURNAMENT ENTRY</h3>
+            <p id="modalSubTitle" class="text-xs text-orange-400 font-semibold"></p>
+          </div>
+          <button onclick="closeJoinModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- Step Indicator -->
+        <div id="stepBar" class="flex justify-between items-center text-[11px] font-bold px-2">
+          <span id="ind1" class="text-orange-400">1. Details</span>
+          <span class="text-gray-600">??</span>
+          <span id="ind2" class="text-gray-500">2. Payment</span>
+          <span class="text-gray-600">??</span>
+          <span id="ind3" class="text-gray-500">3. WhatsApp</span>
+        </div>
+
+        <!-- STEP 1 -->
+        <form id="step1" onsubmit="handleStep1(event)" class="space-y-3">
+          <div>
+            <label class="text-xs text-gray-300 font-bold">Free Fire UID *</label>
+            <input id="ffUid" type="tel" required pattern="[0-9]{6,15}" placeholder="e.g. 1849203948"
+              class="w-full mt-1 bg-gray-900 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500">
+          </div>
+          <div>
+            <label class="text-xs text-gray-300 font-bold">WhatsApp / Phone Number *</label>
+            <input id="phoneNum" type="tel" required pattern="[0-9]{10}" placeholder="10-digit Mobile Number"
+              class="w-full mt-1 bg-gray-900 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500">
+          </div>
+          <div>
+            <label class="text-xs text-gray-300 font-bold">In-Game Name (IGN) *</label>
+            <input id="ffIgn" type="text" required placeholder="Apna Free Fire Name"
+              class="w-full mt-1 bg-gray-900 border border-gray-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500">
+          </div>
+          <div id="step1Notice" class="rounded-xl p-2.5 text-[11px]"></div>
+          <button id="step1Btn" type="submit" class="w-full py-3 rounded-xl font-bold text-white text-sm uppercase"></button>
+        </form>
+
+        <!-- STEP 2 (Only for Paid Matches) -->
+        <form id="step2" onsubmit="verifyPaidEntry(event)" class="hidden space-y-3">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center space-y-2.5">
+            <p class="text-xs text-gray-300">Scan QR Code & Pay <strong id="payAmountText" class="text-yellow-400 text-base">?40</strong></p>
+            <div id="qrcode" class="bg-white p-2 rounded-xl inline-block mx-auto"></div>
+            <div class="flex items-center justify-center gap-2 text-xs">
+              <span class="text-gray-400">UPI:</span>
+              <span id="upiText" class="font-mono text-white font-bold"></span>
+              <button type="button" onclick="copyUpi()" class="px-2 py-0.5 rounded bg-gray-800 border border-gray-700 text-orange-400 font-bold">Copy</button>
+            </div>
+            <a id="upiDeepLink" href="#" class="block w-full py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs">
+              Open GPay / PhonePe / Paytm
+            </a>
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-300 font-bold">12-Digit UTR / Transaction Ref No. *</label>
+            <input id="utrInput" type="text" required pattern="[A-Za-z0-9]{10,22}" placeholder="Payment ke baad UTR number daalein"
+              class="w-full mt-1 bg-gray-900 border border-gray-700 rounded-xl px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-orange-500">
+          </div>
+
+          <div class="flex gap-2">
+            <button type="button" onclick="setStep(1)" class="w-1/3 py-2.5 rounded-xl bg-gray-800 text-gray-300 font-bold text-xs">? Back</button>
+            <button type="submit" class="w-2/3 neon-btn py-2.5 rounded-xl font-bold text-white text-sm uppercase">
+              Get Code & Channel
+            </button>
+          </div>
+        </form>
+
+        <!-- STEP 3 (Code & WhatsApp Unlocked) -->
+        <div id="step3" class="hidden space-y-3 text-center">
+          <div class="w-10 h-10 mx-auto rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xl font-bold">?</div>
+          <h4 id="step3Heading" class="font-esports text-sm font-bold text-white">SLOT CODE GENERATED!</h4>
+
+          <div class="bg-gradient-to-r from-orange-500/20 to-yellow-500/10 border border-orange-500/50 rounded-xl p-3 space-y-1">
+            <p class="text-[10px] uppercase tracking-widest text-orange-300 font-bold">Confirmation Code</p>
+            <p id="confirmCode" class="font-esports text-2xl font-extrabold text-yellow-400"></p>
+            <button onclick="copyCode()" class="px-3 py-1 rounded bg-gray-900 text-[11px] text-white border border-gray-700 font-bold">Copy Code</button>
+          </div>
+
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-left text-xs space-y-0.5 text-gray-300">
+            <p><strong>UID:</strong> <span id="sumUid" class="text-white"></span> | <strong>IGN:</strong> <span id="sumIgn" class="text-white"></span></p>
+            <p><strong>Phone:</strong> <span id="sumPhone" class="text-white"></span> | <strong>Ref:</strong> <span id="sumUtr" class="text-white font-mono"></span></p>
+          </div>
+
+          <div class="space-y-2">
+            <a id="adminWaBtn" target="_blank" href="#" class="block w-full py-2.5 rounded-xl bg-orange-500 text-black font-bold text-xs uppercase">
+              1. Send Code to Admin WhatsApp
+            </a>
+            <a id="channelBtn" target="_blank" href="#" class="block w-full py-2.5 rounded-xl bg-green-600 text-white font-bold text-xs uppercase">
+              2. Join WhatsApp Channel (Room ID & Pass)
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= CUSTOMIZE / ADMIN MODAL ================= -->
+    <div id="customizeModal" class="fixed inset-0 z-40 hidden bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 overflow-y-auto">
+      <div class="w-full max-w-md glass rounded-2xl p-5 space-y-4 my-auto border border-orange-500/30 max-h-[90vh] overflow-y-auto">
+
+        <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+          <h3 class="font-esports text-sm font-bold text-orange-400">?? CUSTOMIZE MODEL</h3>
+          <button onclick="closeCustomizeModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+        </div>
+
+        <!-- PIN Lock -->
+        <div id="custLock" class="space-y-3 text-center py-2">
+          <p class="text-xs text-gray-300">Customize karne ke liye Admin PIN daalein (Demo PIN: <strong class="text-orange-400">1234</strong>)</p>
+          <input id="custPinInput" type="password" placeholder="Enter PIN (1234)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-center text-white tracking-widest">
+          <button onclick="unlockCustomize()" class="w-full neon-btn py-2.5 rounded-xl font-bold text-white text-sm">Unlock Customize</button>
+        </div>
+
+        <!-- Customize Body -->
+        <div id="custBody" class="hidden space-y-5">
+
+          <!-- 1. Global Settings -->
+          <form onsubmit="saveGlobalSettings(event)" class="space-y-2.5 bg-gray-900/70 p-3 rounded-xl border border-gray-800">
+            <h4 class="text-xs font-bold text-orange-400 uppercase">App, UPI & WhatsApp Settings</h4>
+            <input id="cBrand" required placeholder="Brand Name" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+            <input id="cUpi" required placeholder="Your UPI ID (e.g. name@okaxis)" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white font-mono">
+            <input id="cWaNum" required placeholder="Admin WhatsApp (919876543210)" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white font-mono">
+            <input id="cChannel" required placeholder="WhatsApp Channel Link" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+            <button type="submit" class="w-full neon-btn py-2 rounded-lg font-bold text-white text-xs uppercase">Save Global Settings</button>
+          </form>
+
+          <!-- 2. Add New Free or Paid Match -->
+          <form onsubmit="addMatch(event)" class="space-y-2.5 bg-gray-900/70 p-3 rounded-xl border border-gray-800">
+            <h4 class="text-xs font-bold text-green-400 uppercase">+ Add New Free / Paid Match</h4>
+            <input id="mTitle" required placeholder="Match Name (e.g. ARJ Free Clash)" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white">
+            <div class="grid grid-cols-3 gap-2">
+              <select id="mMode" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white">
+                <option value="Squad">Squad</option>
+                <option value="Duo">Duo</option>
+                <option value="Solo">Solo</option>
+              </select>
+              <select id="mMap" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white">
+                <option value="Bermuda">Bermuda</option>
+                <option value="Purgatory">Purgatory</option>
+                <option value="Kalahari">Kalahari</option>
+              </select>
+              <input id="mSlots" type="number" min="2" max="48" value="12" required placeholder="Slots" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="mType" onchange="toggleFeeField()" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white">
+                <option value="free">?? Free Entry (?0)</option>
+                <option value="paid">?? Paid Entry</option>
+              </select>
+              <input id="mEntry" type="number" min="0" value="0" disabled placeholder="Entry ?" class="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 text-xs text-gray-400">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="mPrize" type="number" min="0" required placeholder="Prize Pool ?" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white">
+              <input id="mTime" required placeholder="Time (e.g. Today 9 PM)" class="bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white">
+            </div>
+            <button type="submit" class="w-full free-btn py-2 rounded-lg font-bold text-white text-xs uppercase">Publish Match</button>
+          </form>
+
+          <!-- 3. Manage Matches -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold text-white uppercase">Active Matches</h4>
+            <div id="adminMatchList" class="space-y-1.5 text-xs"></div>
+          </div>
+
+          <!-- 4. Registered Players -->
+          <div class="pt-2 border-t border-gray-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <p class="text-xs font-bold text-white uppercase">Registered Players</p>
+              <button type="button" onclick="clearRegistrations()" class="text-[10px] text-red-400 underline">Clear All</button>
+            </div>
+            <div id="adminRegList" class="space-y-1.5 max-h-40 overflow-y-auto text-xs"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const STORE_KEY = 'arj_model_v2';
+
+    const defaultState = {
+      config: {
+        brandName: 'ARJ E-SPORTS',
+        upiId: 'arjesports@okaxis',
+        adminWhatsapp: '919876543210',
+        whatsappChannelLink: 'https://whatsapp.com/channel/0029VaEXAMPLE'
+      },
+      matches: [
+        {
+          id: 'm_free_1',
+          title: 'ARJ Free Community Scrims',
+          mode: 'Squad',
+          map: 'Bermuda',
+          time: 'Today, 6:00 PM',
+          prize: 100,
+          entryFee: 0,
+          maxSlots: 12
+        },
+        {
+          id: 'm_paid_1',
+          title: 'ARJ Bermuda Booyah Cup',
+          mode: 'Squad',
+          map: 'Bermuda',
+          time: 'Today, 8:00 PM',
+          prize: 500,
+          entryFee: 40,
+          maxSlots: 12
+        }
+      ],
+      registrations: []
+    };
+
+    let state = loadState();
+    let currentFilter = 'all';
+    let activeMatchId = null;
+    let isCustUnlocked = false;
+    let latestCode = '';
+
+    function loadState() {
+      try {
+        const s = localStorage.getItem(STORE_KEY);
+        if (s) return JSON.parse(s);
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(defaultState));
+    }
+
+    function saveState() {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 2200);
+    }
+
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-pill').forEach(b => {
+        const active = b.dataset.f === f;
+        b.className = `filter-pill px-4 py-1.5 rounded-full text-xs font-bold ${active ? 'bg-orange-500 text-black' : 'bg-gray-800 text-gray-300'}`;
+      });
+      renderHome();
+    }
+
+    function renderHome() {
+      document.getElementById('uiBrandName').textContent = state.config.brandName;
+      const box = document.getElementById('matchesList');
+
+      const filtered = state.matches.filter(m => {
+        if (currentFilter === 'free') return m.entryFee === 0;
+        if (currentFilter === 'paid') return m.entryFee > 0;
+        return true;
+      });
+
+      if (!filtered.length) {
+        box.innerHTML = `<div class="glass rounded-xl p-6 text-center text-xs text-gray-400">Is category me abhi koi match nahi hai.</div>`;
+      } else {
+        box.innerHTML = filtered.map(m => {
+          const isFree = m.entryFee === 0;
+          const filled = state.registrations.filter(r => r.matchId === m.id).length;
+          const isFull = filled >= m.maxSlots;
+
+          return `
+            <div class="glass rounded-2xl p-4 space-y-3 shadow-lg ${isFree ? 'border-green-500/35' : ''}">
+              <div class="flex justify-between items-start gap-2">
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded ${isFree ? 'bg-green-500 text-black' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}">
+                      ${isFree ? 'FREE ENTRY' : 'PAID MATCH'}
+                    </span>
+                    <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-gray-800 text-gray-300">${escapeHtml(m.mode)}</span>
+                    <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-gray-800 text-gray-300">${escapeHtml(m.map)}</span>
+                  </div>
+                  <h3 class="font-esports text-sm font-bold text-white mt-2">${escapeHtml(m.title)}</h3>
+                  <p class="text-xs text-gray-400 mt-0.5">${escapeHtml(m.time)}</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 bg-gray-900/90 rounded-xl p-2.5 text-center border border-gray-800">
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase">Prize Pool</p>
+                  <p class="text-sm font-bold text-yellow-400">?${m.prize}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase">Entry Fee</p>
+                  <p class="text-sm font-bold ${isFree ? 'text-green-400' : 'text-white'}">${isFree ? 'FREE' : '?' + m.entryFee}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase">Slots</p>
+                  <p class="text-sm font-bold text-orange-400">${filled} / ${m.maxSlots}</p>
+                </div>
+              </div>
+
+              ${isFull
+                ? `<button disabled class="w-full py-2.5 rounded-xl bg-gray-800 text-gray-500 font-bold text-xs uppercase cursor-not-allowed">Slots Full</button>`
+                : `<button onclick="openJoinModal('${m.id}')" class="w-full ${isFree ? 'free-btn' : 'neon-btn'} py-2.5 rounded-xl font-bold text-white text-xs uppercase tracking-wider">
+                    ${isFree ? 'Join Free & Get Code' : 'Join Match & Pay ?' + m.entryFee}
+                  </button>`
+              }
+            </div>
+          `;
+        }).join('');
+      }
+
+      const last = state.registrations[state.registrations.length - 1];
+      const preview = document.getElementById('myTicketPreview');
+      if (last) {
+        preview.classList.remove('hidden');
+        document.getElementById('previewCode').textContent = last.code;
+        document.getElementById('previewMatch').textContent = last.matchTitle;
+        document.getElementById('previewUid').textContent = last.uid;
+        document.getElementById('previewUtr').textContent = last.utr;
+        document.getElementById('previewChannelBtn').href = state.config.whatsappChannelLink;
+      } else {
+        preview.classList.add('hidden');
+      }
+    }
+
+    // ---- JOIN MODAL FLOW ----
+    function openJoinModal(matchId) {
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      activeMatchId = matchId;
+      const isFree = m.entryFee === 0;
+
+      document.getElementById('modalSubTitle').textContent = `${m.title} • ${isFree ? 'FREE ENTRY' : 'Entry ?' + m.entryFee}`;
+      document.getElementById('step1').reset();
+      document.getElementById('step2').reset();
+
+      const notice = document.getElementById('step1Notice');
+      const btn = document.getElementById('step1Btn');
+      const ind2 = document.getElementById('ind2');
+
+      if (isFree) {
+        notice.className = 'bg-green-500/10 border border-green-500/30 rounded-xl p-2.5 text-[11px] text-green-300';
+        notice.innerHTML = '?? <strong>Free Tournament:</strong> Koi payment nahi karni hai! Details daalte hi aapko Code aur WhatsApp Channel mil jayega.';
+        btn.className = 'w-full free-btn py-3 rounded-xl font-bold text-white text-sm uppercase';
+        btn.textContent = 'Get Free Code & Channel ?';
+        ind2.textContent = '2. Free Pass';
+      } else {
+        notice.className = 'bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 text-[11px] text-red-300';
+        notice.innerHTML = '?? WhatsApp Channel link sirf payment verify karne ke baad hi unlock hoga.';
+        btn.className = 'w-full neon-btn py-3 rounded-xl font-bold text-white text-sm uppercase';
+        btn.textContent = 'Proceed to Payment ?';
+        ind2.textContent = '2. Payment';
+      }
+
+      setStep(1);
+      document.getElementById('joinModal').classList.remove('hidden');
+    }
+
+    function closeJoinModal() {
+      document.getElementById('joinModal').classList.add('hidden');
+    }
+
+    function setStep(num) {
+      [1, 2, 3].forEach(i => {
+        document.getElementById('step' + i).classList.toggle('hidden', i !== num);
+        document.getElementById('ind' + i).className = i === num ? 'text-orange-400' : i < num ? 'text-green-400' : 'text-gray-500';
+      });
+    }
+
+    function handleStep1(e) {
+      e.preventDefault();
+      const m = state.matches.find(x => x.id === activeMatchId);
+      if (!m) return;
+
+      if (m.entryFee === 0) {
+        completeRegistration('FREE ENTRY');
+        return;
+      }
+
+      const c = state.config;
+      const upiUri = `upi://pay?pa=${encodeURIComponent(c.upiId)}&pn=${encodeURIComponent(c.brandName)}&am=${m.entryFee}&cu=INR&tn=${encodeURIComponent(m.title)}`;
+
+      document.getElementById('payAmountText').textContent = '?' + m.entryFee;
+      document.getElementById('upiText').textContent = c.upiId;
+      document.getElementById('upiDeepLink').href = upiUri;
+
+      const qrBox = document.getElementById('qrcode');
+      qrBox.innerHTML = '';
+      try {
+        new QRCode(qrBox, { text: upiUri, width: 165, height: 165 });
+      } catch (err) {
+        qrBox.innerHTML = '<p class="text-xs text-black p-3">Copy UPI ID to Pay</p>';
+      }
+      setStep(2);
+    }
+
+    function copyUpi() {
+      navigator.clipboard?.writeText(state.config.upiId);
+      showToast('UPI ID Copied!');
+    }
+
+    function verifyPaidEntry(e) {
+      e.preventDefault();
+      const utr = document.getElementById('utrInput').value.trim();
+      completeRegistration(utr);
+    }
+
+    function completeRegistration(utrValue) {
+      const m = state.matches.find(x => x.id === activeMatchId);
+      const c = state.config;
+      const uid = document.getElementById('ffUid').value.trim();
+      const phone = document.getElementById('phoneNum').value.trim();
+      const ign = document.getElementById('ffIgn').value.trim();
+      const isFree = m.entryFee === 0;
+
+      latestCode = isFree
+        ? `ARJ-FREE-${Math.floor(1000 + Math.random() * 9000)}`
+        : `ARJ-${Math.floor(1000 + Math.random() * 9000)}-${uid.slice(-2)}`;
+
+      state.registrations.push({
+        matchId: m.id,
+        matchTitle: m.title,
+        uid, phone, ign,
+        utr: utrValue,
+        code: latestCode,
+        time: new Date().toLocaleTimeString()
+      });
+      saveState();
+      renderHome();
+
+      document.getElementById('step3Heading').textContent = isFree ? 'FREE SLOT CONFIRMED!' : 'PAYMENT CODE GENERATED!';
+      document.getElementById('confirmCode').textContent = latestCode;
+      document.getElementById('sumUid').textContent = uid;
+      document.getElementById('sumIgn').textContent = ign;
+      document.getElementById('sumPhone').textContent = phone;
+      document.getElementById('sumUtr').textContent = utrValue;
+
+      const waMsg = isFree
+        ? `Hello ${c.brandName}! Maine FREE Tournament (${m.title}) join kiya hai.\n\nCode: ${latestCode}\nFF UID: ${uid}\nIGN: ${ign}\nPhone: ${phone}\n\nPlease mera Custom Room slot confirm karein!`
+        : `Hello ${c.brandName}! Maine ?${m.entryFee} payment (${m.title}) kar di hai.\n\nCode: ${latestCode}\nFF UID: ${uid}\nIGN: ${ign}\nPhone: ${phone}\nUTR: ${utrValue}\n\nPlease mera Custom Room slot confirm karein!`;
+
+      document.getElementById('adminWaBtn').href = `https://wa.me/${c.adminWhatsapp}?text=${encodeURIComponent(waMsg)}`;
+      document.getElementById('channelBtn').href = c.whatsappChannelLink;
+
+      setStep(3);
+    }
+
+    function copyCode() {
+      navigator.clipboard?.writeText(latestCode);
+      showToast('Code Copied: ' + latestCode);
+    }
+
+    // ---- CUSTOMIZE MODAL ----
+    function openCustomizeModal() {
+      document.getElementById('customizeModal').classList.remove('hidden');
+      if (isCustUnlocked) renderCustomizeData();
+    }
+
+    function closeCustomizeModal() {
+      document.getElementById('customizeModal').classList.add('hidden');
+    }
+
+    function unlockCustomize() {
+      if (document.getElementById('custPinInput').value === '1234') {
+        isCustUnlocked = true;
+        document.getElementById('custLock').classList.add('hidden');
+        document.getElementById('custBody').classList.remove('hidden');
+        renderCustomizeData();
+      } else {
+        showToast('Wrong PIN! Use 1234');
+      }
+    }
+
+    function toggleFeeField() {
+      const type = document.getElementById('mType').value;
+      const entry = document.getElementById('mEntry');
+      if (type === 'free') {
+        entry.value = 0;
+        entry.disabled = true;
+        entry.className = 'bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 text-xs text-gray-400';
+      } else {
+        entry.value = 40;
+        entry.disabled = false;
+        entry.min = 1;
+        entry.className = 'bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white';
+      }
+    }
+
+    function renderCustomizeData() {
+      const c = state.config;
+      document.getElementById('cBrand').value = c.brandName;
+      document.getElementById('cUpi').value = c.upiId;
+      document.getElementById('cWaNum').value = c.adminWhatsapp;
+      document.getElementById('cChannel').value = c.whatsappChannelLink;
+
+      const mList = document.getElementById('adminMatchList');
+      mList.innerHTML = state.matches.map(m => `
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-2 flex justify-between items-center">
+          <div>
+            <p class="font-bold text-white">${escapeHtml(m.title)} <span class="${m.entryFee === 0 ? 'text-green-400' : 'text-yellow-400'}">(${m.entryFee === 0 ? 'FREE' : '?' + m.entryFee})</span></p>
+            <p class="text-[10px] text-gray-400">${escapeHtml(m.mode)} • ${escapeHtml(m.map)} • ${escapeHtml(m.time)}</p>
+          </div>
+          <button type="button" onclick="deleteMatch('${m.id}')" class="text-red-400 font-bold text-[11px] px-2">Delete</button>
+        </div>
+      `).join('') || '<p class="text-gray-500">Koi match nahi hai.</p>';
+
+      const rList = document.getElementById('adminRegList');
+      rList.innerHTML = state.registrations.map(r => `
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-2 flex justify-between items-center">
+          <div>
+            <p class="font-bold text-white">${escapeHtml(r.ign)} <span class="text-gray-400">(${escapeHtml(r.uid)})</span></p>
+            <p class="text-[10px] text-gray-400">${escapeHtml(r.matchTitle)} • Ref: <span class="font-mono">${escapeHtml(r.utr)}</span></p>
+          </div>
+          <span class="font-esports text-[10px] text-yellow-400 font-bold">${escapeHtml(r.code)}</span>
+        </div>
+      `).join('') || '<p class="text-gray-500">Abhi koi entry nahi aayi hai.</p>';
+    }
+
+    function saveGlobalSettings(e) {
+      e.preventDefault();
+      state.config = {
+        brandName: document.getElementById('cBrand').value.trim(),
+        upiId: document.getElementById('cUpi').value.trim(),
+        adminWhatsapp: document.getElementById('cWaNum').value.trim(),
+        whatsappChannelLink: document.getElementById('cChannel').value.trim()
+      };
+      saveState();
+      renderHome();
+      showToast('Settings Saved!');
+    }
+
+    function addMatch(e) {
+      e.preventDefault();
+      const isFree = document.getElementById('mType').value === 'free';
+      state.matches.unshift({
+        id: 'm_' + Date.now(),
+        title: document.getElementById('mTitle').value.trim(),
+        mode: document.getElementById('mMode').value,
+        map: document.getElementById('mMap').value,
+        maxSlots: Number(document.getElementById('mSlots').value),
+        entryFee: isFree ? 0 : Number(document.getElementById('mEntry').value),
+        prize: Number(document.getElementById('mPrize').value),
+        time: document.getElementById('mTime').value.trim()
+      });
+      saveState();
+      e.target.reset();
+      toggleFeeField();
+      renderHome();
+      renderCustomizeData();
+      showToast('New Match Published!');
+    }
+
+    function deleteMatch(id) {
+      state.matches = state.matches.filter(m => m.id !== id);
+      saveState();
+      renderHome();
+      renderCustomizeData();
+      showToast('Match Deleted');
+    }
+
+    function clearRegistrations() {
+      state.registrations = [];
+      saveState();
+      renderHome();
+      renderCustomizeData();
+      showToast('Registrations Cleared');
+    }
+
+    renderHome();
+  </script>
+</body>
+</html>
