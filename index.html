@@ -298,3 +298,397 @@
           entryFee: 40,
           maxSlots: 12
         }
+      ],
+      registrations: []
+    };
+    // ==========================================================
+
+    let state = loadState();
+    let currentFilter = 'all';
+    let activeMatchId = null;
+    let isCustUnlocked = false;
+    let latestCode = '';
+    let logoTapCount = 0;
+    let logoTapTimer = null;
+
+    // Show Customize button only if URL ends with ?admin=arj
+    if (new URLSearchParams(window.location.search).get('admin') === 'arj') {
+      document.getElementById('secretAdminBtn').classList.remove('hidden');
+    }
+
+    function handleSecretLogoTap() {
+      logoTapCount++;
+      clearTimeout(logoTapTimer);
+      if (logoTapCount >= 5) {
+        logoTapCount = 0;
+        openCustomizeModal();
+      } else {
+        logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 2000);
+      }
+    }
+
+    function loadState() {
+      try {
+        const s = localStorage.getItem(STORE_KEY);
+        if (s) return JSON.parse(s);
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(defaultState));
+    }
+
+    function saveState() {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    function normalizeUrl(url) {
+      let u = String(url || '').trim();
+      if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u;
+      return u;
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 2200);
+    }
+
+    function setFilter(f) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-pill').forEach(b => {
+        const active = b.dataset.f === f;
+        b.className = `filter-pill px-4 py-1.5 rounded-full text-xs font-bold ${active ? 'bg-orange-500 text-black' : 'bg-gray-800 text-gray-300'}`;
+      });
+      renderHome();
+    }
+
+    function renderHome() {
+      document.getElementById('uiBrandName').textContent = state.config.brandName;
+      const box = document.getElementById('matchesList');
+
+      const filtered = state.matches.filter(m => {
+        if (currentFilter === 'free') return m.entryFee === 0;
+        if (currentFilter === 'paid') return m.entryFee > 0;
+        return true;
+      });
+
+      if (!filtered.length) {
+        box.innerHTML = `<div class="glass rounded-xl p-6 text-center text-xs text-gray-400">Is category me abhi koi match nahi hai.</div>`;
+      } else {
+        box.innerHTML = filtered.map(m => {
+          const isFree = m.entryFee === 0;
+          const filled = state.registrations.filter(r => r.matchId === m.id).length;
+          const isFull = filled >= m.maxSlots;
+
+          return `
+            <div class="glass rounded-2xl p-4 space-y-3 shadow-lg ${isFree ? 'border-green-500/35' : ''}">
+              <div class="flex justify-between items-start gap-2">
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded ${isFree ? 'bg-green-500 text-black' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}">
+                      ${isFree ? 'FREE ENTRY' : 'PAID MATCH'}
+                    </span>
+                    <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-gray-800 text-gray-300">${escapeHtml(m.mode)}</span>
+                    <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded bg-gray-800 text-gray-300">${escapeHtml(m.map)}</span>
+                  </div>
+                  <h3 class="font-esports text-sm font-bold text-white mt-2">${escapeHtml(m.title)}</h3>
+                  <p class="text-xs text-gray-400 mt-0.5">${escapeHtml(m.time)}</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 bg-gray-900/90 rounded-xl p-2.5 text-center border border-gray-800">
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase">Prize Pool</p>
+                  <p class="text-sm font-bold text-yellow-400">₹${m.prize}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase">Entry Fee</p>
+                  <p class="text-sm font-bold ${isFree ? 'text-green-400' : 'text-white'}">${isFree ? 'FREE' : '₹' + m.entryFee}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-gray-400 uppercase">Slots</p>
+                  <p class="text-sm font-bold text-orange-400">${filled} / ${m.maxSlots}</p>
+                </div>
+              </div>
+
+              ${isFull
+                ? `<button disabled class="w-full py-2.5 rounded-xl bg-gray-800 text-gray-500 font-bold text-xs uppercase cursor-not-allowed">Slots Full</button>`
+                : `<button onclick="openJoinModal('${m.id}')" class="w-full ${isFree ? 'free-btn' : 'neon-btn'} py-2.5 rounded-xl font-bold text-white text-xs uppercase tracking-wider">
+                    ${isFree ? 'Join Free & Get Code' : 'Join Match & Pay ₹' + m.entryFee}
+                  </button>`
+              }
+            </div>
+          `;
+        }).join('');
+      }
+
+      const last = state.registrations[state.registrations.length - 1];
+      const preview = document.getElementById('myTicketPreview');
+      if (last) {
+        preview.classList.remove('hidden');
+        document.getElementById('previewCode').textContent = last.code;
+        document.getElementById('previewMatch').textContent = last.matchTitle;
+        document.getElementById('previewUid').textContent = last.uid;
+        document.getElementById('previewUtr').textContent = last.utr;
+        document.getElementById('previewChannelBtn').href = normalizeUrl(state.config.whatsappChannelLink);
+      } else {
+        preview.classList.add('hidden');
+      }
+    }
+
+    // ---- JOIN MODAL FLOW ----
+    function openJoinModal(matchId) {
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      activeMatchId = matchId;
+      const isFree = m.entryFee === 0;
+
+      document.getElementById('modalSubTitle').textContent = `${m.title} • ${isFree ? 'FREE ENTRY' : 'Entry ₹' + m.entryFee}`;
+      document.getElementById('step1').reset();
+      document.getElementById('step2').reset();
+
+      const notice = document.getElementById('step1Notice');
+      const btn = document.getElementById('step1Btn');
+      const ind2 = document.getElementById('ind2');
+
+      if (isFree) {
+        notice.className = 'bg-green-500/10 border border-green-500/30 rounded-xl p-2.5 text-[11px] text-green-300';
+        notice.innerHTML = '🎁 <strong>Free Tournament:</strong> Koi payment nahi karni hai! Details daalte hi aapko Code aur WhatsApp Channel mil jayega.';
+        btn.className = 'w-full free-btn py-3 rounded-xl font-bold text-white text-sm uppercase';
+        btn.textContent = 'Get Free Code & Channel →';
+        ind2.textContent = '2. Free Pass';
+      } else {
+        notice.className = 'bg-red-500/10 border border-red-500/30 rounded-xl p-2.5 text-[11px] text-red-300';
+        notice.innerHTML = '🔒 WhatsApp Channel link sirf payment verify karne ke baad hi unlock hoga.';
+        btn.className = 'w-full neon-btn py-3 rounded-xl font-bold text-white text-sm uppercase';
+        btn.textContent = 'Proceed to Payment →';
+        ind2.textContent = '2. Payment';
+      }
+
+      setStep(1);
+      document.getElementById('joinModal').classList.remove('hidden');
+    }
+
+    function closeJoinModal() {
+      document.getElementById('joinModal').classList.add('hidden');
+    }
+
+    function setStep(num) {
+      [1, 2, 3].forEach(i => {
+        document.getElementById('step' + i).classList.toggle('hidden', i !== num);
+        document.getElementById('ind' + i).className = i === num ? 'text-orange-400' : i < num ? 'text-green-400' : 'text-gray-500';
+      });
+    }
+
+    function handleStep1(e) {
+      e.preventDefault();
+      const m = state.matches.find(x => x.id === activeMatchId);
+      if (!m) return;
+
+      if (m.entryFee === 0) {
+        completeRegistration('FREE ENTRY');
+        return;
+      }
+
+      const c = state.config;
+      const upiUri = `upi://pay?pa=${encodeURIComponent(c.upiId)}&pn=${encodeURIComponent(c.brandName)}&am=${m.entryFee}&cu=INR&tn=${encodeURIComponent(m.title)}`;
+
+      document.getElementById('payAmountText').textContent = '₹' + m.entryFee;
+      document.getElementById('upiText').textContent = c.upiId;
+      document.getElementById('upiDeepLink').href = upiUri;
+
+      const qrBox = document.getElementById('qrcode');
+      qrBox.innerHTML = '';
+      try {
+        new QRCode(qrBox, { text: upiUri, width: 165, height: 165 });
+      } catch (err) {
+        qrBox.innerHTML = '<p class="text-xs text-black p-3">Copy UPI ID to Pay</p>';
+      }
+      setStep(2);
+    }
+
+    function copyUpi() {
+      navigator.clipboard?.writeText(state.config.upiId);
+      showToast('UPI ID Copied!');
+    }
+
+    function verifyPaidEntry(e) {
+      e.preventDefault();
+      const utr = document.getElementById('utrInput').value.trim();
+      completeRegistration(utr);
+    }
+
+    function completeRegistration(utrValue) {
+      const m = state.matches.find(x => x.id === activeMatchId);
+      const c = state.config;
+      const uid = document.getElementById('ffUid').value.trim();
+      const phone = document.getElementById('phoneNum').value.trim();
+      const ign = document.getElementById('ffIgn').value.trim();
+      const isFree = m.entryFee === 0;
+
+      latestCode = isFree
+        ? `ARJ-FREE-${Math.floor(1000 + Math.random() * 9000)}`
+        : `ARJ-${Math.floor(1000 + Math.random() * 9000)}-${uid.slice(-2)}`;
+
+      state.registrations.push({
+        matchId: m.id,
+        matchTitle: m.title,
+        uid, phone, ign,
+        utr: utrValue,
+        code: latestCode,
+        time: new Date().toLocaleTimeString()
+      });
+      saveState();
+      renderHome();
+
+      document.getElementById('step3Heading').textContent = isFree ? 'FREE SLOT CONFIRMED!' : 'PAYMENT CODE GENERATED!';
+      document.getElementById('confirmCode').textContent = latestCode;
+      document.getElementById('sumUid').textContent = uid;
+      document.getElementById('sumIgn').textContent = ign;
+      document.getElementById('sumPhone').textContent = phone;
+      document.getElementById('sumUtr').textContent = utrValue;
+
+      const waMsg = isFree
+        ? `Hello ${c.brandName}! Maine FREE Tournament (${m.title}) join kiya hai.\n\nCode: ${latestCode}\nFF UID: ${uid}\nIGN: ${ign}\nPhone: ${phone}\n\nPlease mera Custom Room slot confirm karein!`
+        : `Hello ${c.brandName}! Maine ₹${m.entryFee} payment (${m.title}) kar di hai.\n\nCode: ${latestCode}\nFF UID: ${uid}\nIGN: ${ign}\nPhone: ${phone}\nUTR: ${utrValue}\n\nPlease mera Custom Room slot confirm karein!`;
+
+      document.getElementById('adminWaBtn').href = `https://wa.me/${c.adminWhatsapp}?text=${encodeURIComponent(waMsg)}`;
+      document.getElementById('channelBtn').href = normalizeUrl(c.whatsappChannelLink);
+
+      setStep(3);
+    }
+
+    function copyCode() {
+      navigator.clipboard?.writeText(latestCode);
+      showToast('Code Copied: ' + latestCode);
+    }
+
+    function copyChannelLink() {
+      const link = normalizeUrl(state.config.whatsappChannelLink);
+      navigator.clipboard?.writeText(link);
+      showToast('Channel Link Copied!');
+    }
+
+    // ---- SECRET CUSTOMIZE MODAL ----
+    function openCustomizeModal() {
+      document.getElementById('customizeModal').classList.remove('hidden');
+      if (isCustUnlocked) renderCustomizeData();
+    }
+
+    function closeCustomizeModal() {
+      document.getElementById('customizeModal').classList.add('hidden');
+    }
+
+    function unlockCustomize() {
+      if (document.getElementById('custPinInput').value === ADMIN_PIN) {
+        isCustUnlocked = true;
+        document.getElementById('custLock').classList.add('hidden');
+        document.getElementById('custBody').classList.remove('hidden');
+        renderCustomizeData();
+      } else {
+        showToast('Wrong PIN!');
+      }
+    }
+
+    function toggleFeeField() {
+      const type = document.getElementById('mType').value;
+      const entry = document.getElementById('mEntry');
+      if (type === 'free') {
+        entry.value = 0;
+        entry.disabled = true;
+        entry.className = 'bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 text-xs text-gray-400';
+      } else {
+        entry.value = 40;
+        entry.disabled = false;
+        entry.min = 1;
+        entry.className = 'bg-gray-900 border border-gray-700 rounded-lg px-2 py-2 text-xs text-white';
+      }
+    }
+
+    function renderCustomizeData() {
+      const c = state.config;
+      document.getElementById('cBrand').value = c.brandName;
+      document.getElementById('cUpi').value = c.upiId;
+      document.getElementById('cWaNum').value = c.adminWhatsapp;
+      document.getElementById('cChannel').value = c.whatsappChannelLink;
+
+      const mList = document.getElementById('adminMatchList');
+      mList.innerHTML = state.matches.map(m => `
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-2 flex justify-between items-center">
+          <div>
+            <p class="font-bold text-white">${escapeHtml(m.title)} <span class="${m.entryFee === 0 ? 'text-green-400' : 'text-yellow-400'}">(${m.entryFee === 0 ? 'FREE' : '₹' + m.entryFee})</span></p>
+            <p class="text-[10px] text-gray-400">${escapeHtml(m.mode)} • ${escapeHtml(m.map)} • ${escapeHtml(m.time)}</p>
+          </div>
+          <button type="button" onclick="deleteMatch('${m.id}')" class="text-red-400 font-bold text-[11px] px-2">Delete</button>
+        </div>
+      `).join('') || '<p class="text-gray-500">Koi match nahi hai.</p>';
+
+      const rList = document.getElementById('adminRegList');
+      rList.innerHTML = state.registrations.map(r => `
+        <div class="bg-gray-900 border border-gray-800 rounded-lg p-2 flex justify-between items-center">
+          <div>
+            <p class="font-bold text-white">${escapeHtml(r.ign)} <span class="text-gray-400">(${escapeHtml(r.uid)})</span></p>
+            <p class="text-[10px] text-gray-400">${escapeHtml(r.matchTitle)} • Ref: <span class="font-mono">${escapeHtml(r.utr)}</span></p>
+          </div>
+          <span class="font-esports text-[10px] text-yellow-400 font-bold">${escapeHtml(r.code)}</span>
+        </div>
+      `).join('') || '<p class="text-gray-500">Abhi koi entry nahi aayi hai.</p>';
+    }
+
+    function saveGlobalSettings(e) {
+      e.preventDefault();
+      state.config = {
+        brandName: document.getElementById('cBrand').value.trim(),
+        upiId: document.getElementById('cUpi').value.trim(),
+        adminWhatsapp: document.getElementById('cWaNum').value.trim(),
+        whatsappChannelLink: normalizeUrl(document.getElementById('cChannel').value)
+      };
+      saveState();
+      renderHome();
+      showToast('Settings Saved!');
+    }
+
+    function addMatch(e) {
+      e.preventDefault();
+      const isFree = document.getElementById('mType').value === 'free';
+      state.matches.unshift({
+        id: 'm_' + Date.now(),
+        title: document.getElementById('mTitle').value.trim(),
+        mode: document.getElementById('mMode').value,
+        map: document.getElementById('mMap').value,
+        maxSlots: Number(document.getElementById('mSlots').value),
+        entryFee: isFree ? 0 : Number(document.getElementById('mEntry').value),
+        prize: Number(document.getElementById('mPrize').value),
+        time: document.getElementById('mTime').value.trim()
+      });
+      saveState();
+      e.target.reset();
+      toggleFeeField();
+      renderHome();
+      renderCustomizeData();
+      showToast('New Match Published!');
+    }
+
+    function deleteMatch(id) {
+      state.matches = state.matches.filter(m => m.id !== id);
+      saveState();
+      renderHome();
+      renderCustomizeData();
+      showToast('Match Deleted');
+    }
+
+    function clearRegistrations() {
+      state.registrations = [];
+      saveState();
+      renderHome();
+      renderCustomizeData();
+      showToast('Registrations Cleared');
+    }
+
+    renderHome();
+  </script>
+</body>
+</html>
